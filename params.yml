@@ -1,0 +1,11 @@
+minio_endpoint: 
+minio_access_key_id:
+minio_secret_access_key:
+s3_image_bucket:
+s3_access_key_id:
+s3_config_bucket:
+s3_secret_access_key:
+lab-number:
+smtp_host:
+email_from:
+email_address:

@@ -1,0 +1,102 @@
+---
+resource_types:
+- name: email
+  type: docker-image
+  source:
+    repository: pcfseceng/email-resource
+
+resources:
+- name: platform-automation-tasks
+  type: s3
+  source:
+    endpoint: ((minio_endpoint))
+    access_key_id: ((minio_access_key_id))
+    secret_access_key: ((minio_secret_access_key))
+    bucket: ((s3_image_bucket))
+    regexp: platform-automation-tasks-(.*).zip
+    disable_ssl: true
+
+- name: platform-automation-image
+  type: s3
+  source:
+    endpoint: ((minio_endpoint))
+    access_key_id: ((minio_access_key_id))
+    secret_access_key: ((minio_secret_access_key))
+    bucket: ((s3_image_bucket))
+    regexp: platform-automation-image-(.*).tgz
+    disable_ssl: true
+
+- name: env
+  type: s3
+  source:
+    access_key_id: ((s3_access_key_id))
+    bucket: ((s3_config_bucket))
+    secret_access_key: ((s3_secret_access_key))
+    versioned_file: env((lab_number))/env.yml
+
+
+- name: expired-cert-email-report
+  type: email
+  source:
+    smtp:
+      host: ((smtp_host))
+      port: '25'
+      anonymous: true
+      skip_ssl_validation: true
+    from: ((email_from))
+    to: [((email_address1))]
+
+- name: daily-trigger
+  type: time
+  source:
+    interval: 24h
+
+
+jobs:
+- name: check-expiring-certs
+  serial: true
+  plan:
+  - in_parallel:
+    - get: daily-trigger
+      trigger: true
+    - get: platform-automation-image
+      params:
+        unpack: true
+    - get: platform-automation-tasks
+      params:
+        unpack: true
+    - get: env
+  - task: verify-no-expiring-certs
+    image: platform-automation-image
+    input_mapping:
+      env: env
+    params:
+      EXPIRES_WITHIN: 6m
+    config:
+      platform: linux
+      inputs:
+      - name: env
+      params:
+        ENV_FILE: env.yml
+        EXPIRES_WITHIN: 
+      outputs:
+      - name: expiring-certs
+      run:
+        path: bash
+        args:
+        - -excl
+        - |-
+          cat /var/version && echo ""
+          set -ex
+          if [ -z "$EXPIRES_WITHIN" ]; then
+            echo "The parameter EXPIRES_WITHIN is required"
+            exit 1
+          fi
+          mkdir -p expiring-certs
+          om --env env/"${ENV_FILE}" expiring-certificates --expires-within "$EXPIRES_WITHIN" > expiring-certs/cert-list.txt
+
+  on_failure:
+    put: expired-cert-email-report
+    params:
+      subject_text: "ALERT: Expiring certs were found in Pivotal Application Service Platform"
+      body: expiring-certs/cert-list.txt
