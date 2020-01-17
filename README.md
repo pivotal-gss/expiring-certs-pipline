@@ -19,7 +19,7 @@ Often we see our Operators struggling to monitor and rotate non-configurable and
 * Bosh DNS
     * As of Opsman 2.3~ bosh-dns leaf certifications can be rotated using opsman api `POST /api/v0/certificate_authorities/active/regenerate`
     * After upgrading to Opsman [2.3](https://docs.pivotal.io/pivotalcf/2-3/pcf-release-notes/opsmanager-rn.html#bosh-dns-certs) a new 4 year Bosh DNS CA cert is automatically generated.  But you will still need to regenerate the leaf certificates using opsman api `POST /api/v0/certificate_authorities/active/regenerate` after upgrading to 2.3.
-* Rotating Opsman SAML Certricate is not supported via API
+* Rotating Opsman SAML Certificate is not supported via API
     * [How to check and rotate Ops Manager SAML Certificate before it expires](https://community.pivotal.io/s/article/how-to-check-and-rotate-ops-manager-saml-certificate-before-it-expires)
 * Credhub managed CAs are not rotatable via opsman API, however a cli tool called credhub maestro will allow you to rotate these certs
     * [https://docs-pcf-staging.cfapps.io/platform/2-8/release-notes/opsmanager-rn.html#maestro-rotate-ca](https://docs-pcf-staging.cfapps.io/platform/2-8/release-notes/opsmanager-rn.html#maestro-rotate-ca)
